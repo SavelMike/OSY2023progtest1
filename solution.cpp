@@ -53,10 +53,76 @@ class COptimizer
     void                               start                                   ( int                                   threadCount );
     void                               stop                                    ( void );
     void                               addCompany                              ( ACompany                              company );
-  private:
+private:
+	std::vector<ACompany>  m_Companies;
+	std::vector<pthread_t> m_Thread_ids;
 };
 
 // TODO: COptimizer implementation goes here
+void *worker_thread(void * arg) {
+	CProgtestSolver solver = createProgtestSolver();
+	while(true) {
+		// wait until there is problem_pack
+		// add CProblems to solver from problem_pack
+		// start solving
+		solver.solve();
+		// return solved pack to company
+	}
+}
+
+void *communication_get_thread(void* arg) {
+	ACompany company = arg;
+	while (true) {
+		AProblemPack pack = company.waitForPack();
+		if (pack == nullptr) {
+			break;
+		}
+		// Add pack to shared input list to the end
+	}
+}
+
+void *communication_put_thread(void* arg) {
+	ACompany company = arg;
+	while (true) {
+		// get solved pack from output list (may block)
+		company.solvedPack();
+	}
+}
+
+// Add company
+void  COptimizer::addCompany(ACompany company) {
+	 m_Companies . push_back ( std::move ( company ) );
+}
+
+// Start
+void COptimizer::start(int threadCount) {
+	// Start threadCount of working threads
+	for (int i = 0; i < threadCount; i++) {
+		pthread_t tid;
+		if (pthread_create(&tid, nullptr, worker_thread, nullptr) != 0) {
+			throw std::logic_error("cannot create thread");
+	        }
+		m_Thread_ids.push_back(tid);
+	}
+	
+	for (auto company :  m_Companies) {
+		pthread_t tid;
+		if (pthread_create(&tid, nullptr, communication_get_thread, company) != 0) {
+			throw std::logic_error("cannot create thread");
+	        }
+		m_Thread_ids.push_back(tid);
+		if (pthread_create(&tid, nullptr, communication_put_thread, company) != 0) {
+			throw std::logic_error("cannot create thread");
+	        }
+		m_Thread_ids.push_back(tid);
+	}
+}
+// Stop
+void COptimizer::stop(void) {
+	
+}
+
+}
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #ifndef __PROGTEST__
 int                                    main                                    ( void )
